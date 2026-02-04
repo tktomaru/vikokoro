@@ -1,0 +1,244 @@
+:root {
+  --bg: #0b0d12;
+  --panel: #121622;
+  --panel2: #0f1320;
+  --text: #e7e9ee;
+  --muted: #a8afc2;
+  --accent: #6ea8fe;
+  --edge: rgba(180, 200, 255, 0.35);
+
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text);
+  background: var(--bg);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.appRoot {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.loading {
+  padding: 12px;
+  color: var(--muted);
+}
+
+.tabBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: linear-gradient(180deg, var(--panel), var(--panel2));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tabList {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+  overflow: auto;
+}
+
+.tab {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.tab:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.tabActive {
+  border-color: rgba(110, 168, 254, 0.6);
+  background: rgba(110, 168, 254, 0.14);
+}
+
+.tabActions {
+  display: flex;
+}
+
+.tabNew {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.tabNew:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.editorViewport {
+  position: relative;
+  flex: 1;
+  overflow: auto;
+  outline: none;
+}
+
+.modalOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.modal {
+  width: min(420px, calc(100% - 32px));
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(15, 19, 32, 0.92);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+  padding: 14px 16px;
+}
+
+.modalTitle {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.modalBody {
+  color: var(--muted);
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.modalButton {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.modalButton:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.modalButtonDanger {
+  border-color: rgba(255, 120, 120, 0.35);
+  background: rgba(255, 80, 80, 0.12);
+}
+
+.modalButtonDanger:hover {
+  background: rgba(255, 80, 80, 0.18);
+}
+
+.editorCanvas {
+  position: relative;
+}
+
+.editorLines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.edgePath {
+  fill: none;
+  stroke: var(--edge);
+  stroke-width: 1.2;
+}
+
+.edgePathSelected {
+  stroke: rgba(110, 168, 254, 0.85);
+  stroke-width: 2;
+}
+
+.node {
+  position: absolute;
+  z-index: 1;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  box-sizing: border-box;
+  user-select: none;
+  cursor: default;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.node:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.nodeText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+  color: var(--text);
+}
+
+.nodeSelected {
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 2px rgba(110, 168, 254, 0.18);
+}
+
+.nodeEditing {
+  opacity: 0.35;
+}
+
+.nodeInput {
+  position: absolute;
+  z-index: 2;
+  box-sizing: border-box;
+  border-radius: 8px;
+  border: 2px solid var(--accent);
+  background: rgba(0, 0, 0, 0.55);
+  color: var(--text);
+  padding: 0 10px;
+  outline: none;
+}
+
+.statusBar {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.35);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.statusLeft,
+.statusRight {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
