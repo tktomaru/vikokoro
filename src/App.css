@@ -247,6 +247,20 @@ input {
   outline: none;
 }
 
+.editorViewportPannable,
+.editorViewportPannable .node {
+  cursor: grab;
+}
+
+.editorViewportPanning,
+.editorViewportPanning .node {
+  cursor: grabbing;
+}
+
+.editorViewportPanning {
+  user-select: none;
+}
+
 .modalOverlay {
   position: absolute;
   inset: 0;
@@ -300,8 +314,147 @@ input {
 .modalActions {
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 12px;
+}
+
+.searchModal {
+  width: min(560px, calc(100% - 32px));
+}
+
+.searchBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--inputBg);
+  color: var(--text);
+  padding: 0 10px;
+  outline: none;
+}
+
+.searchMeta {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.searchList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  max-height: min(300px, 45vh);
+  overflow: auto;
+}
+
+.searchItem {
+  text-align: left;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.searchItem:hover {
+  background: var(--surfaceHover);
+}
+
+.searchItemActive {
+  border-color: var(--accentBorder);
+  background: var(--accentBg);
+}
+
+.searchItemTitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.searchItemSubtitle {
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.paletteModal {
+  width: min(560px, calc(100% - 32px));
+}
+
+.paletteBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.paletteInput {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--inputBg);
+  color: var(--text);
+  padding: 0 10px;
+  outline: none;
+}
+
+.paletteMeta {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.paletteList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  max-height: min(320px, 50vh);
+  overflow: auto;
+}
+
+.paletteItem {
+  text-align: left;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 10px 10px;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.paletteItem:hover {
+  background: var(--surfaceHover);
+}
+
+.paletteItemActive {
+  border-color: var(--accentBorder);
+  background: var(--accentBg);
+}
+
+.paletteItemTitle {
+  font-weight: 600;
+}
+
+.paletteItemSubtitle {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .modalButton {
@@ -331,6 +484,10 @@ input {
   position: relative;
 }
 
+.editorCanvasOuter {
+  position: relative;
+}
+
 .editorLines {
   position: absolute;
   inset: 0;
@@ -350,6 +507,7 @@ input {
 }
 
 .node {
+  animation: nodeIn 160ms ease both;
   position: absolute;
   z-index: 1;
   border-radius: 8px;
@@ -369,8 +527,44 @@ input {
     box-shadow 120ms ease;
 }
 
+.nodeExiting {
+  pointer-events: none;
+  animation: nodeOut 160ms ease both;
+}
+
+@keyframes nodeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes nodeOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+
 .node:hover {
   background: var(--surfaceHover);
+}
+
+.nodeMatch {
+  border-color: color-mix(in srgb, var(--accentBorder), var(--border) 60%);
+}
+
+.nodeMatchActive {
+  border-color: var(--accentBorder);
+  background: color-mix(in srgb, var(--accentBg), var(--surface) 60%);
 }
 
 .nodeText {
@@ -431,7 +625,11 @@ input {
   .tabTheme,
   .modal,
   .modalButton,
+  .searchItem,
+  .paletteItem,
+  .statusHelpButton,
   .node,
+  .nodeExiting,
   .nodeInput {
     transition: none;
     animation: none;
@@ -465,6 +663,10 @@ input {
 .statusValue {
   color: var(--text);
   font-variant-numeric: tabular-nums;
+}
+
+.statusValueSaving {
+  color: var(--muted);
 }
 
 .statusDot {

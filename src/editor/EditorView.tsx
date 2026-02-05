@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Document, Mode, Node, NodeId } from "./types";
 import {
   computeLayout,
@@ -12,16 +12,36 @@ type Props = {
   doc: Document;
   mode: Mode;
   disabled: boolean;
+  zoom: number;
+  panGestureActive: boolean;
+  highlightedNodeIds: Set<NodeId> | null;
+  activeHighlightedNodeId: NodeId | null;
   onSelectNode: (nodeId: NodeId) => void;
   onChangeText: (text: string) => void;
   onEsc: () => void;
 };
 
-export function EditorView({ doc, mode, disabled, onSelectNode, onChangeText, onEsc }: Props) {
+type ExitingNode = { node: Node; pos: NodePosition };
+
+export function EditorView({
+  doc,
+  mode,
+  disabled,
+  zoom,
+  panGestureActive,
+  highlightedNodeIds,
+  activeHighlightedNodeId,
+  onSelectNode,
+  onChangeText,
+  onEsc,
+}: Props) {
   const layout = useMemo(() => computeLayout(doc), [doc]);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const isComposingRef = useRef(false);
+  const prevNodesRef = useRef<Record<NodeId, Node> | null>(null);
+  const prevPositionsRef = useRef<Record<NodeId, NodePosition> | null>(null);
+  const [exitingNodes, setExitingNodes] = useState<Record<NodeId, ExitingNode>>({});
 
   const cursorPos = layout.positions[doc.cursorId];
   const cursorNode = doc.nodes[doc.cursorId];
@@ -42,6 +62,49 @@ export function EditorView({ doc, mode, disabled, onSelectNode, onChangeText, on
     const el = root.querySelector<HTMLElement>(`[data-node-id="${doc.cursorId}"]`);
     el?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }, [doc.cursorId]);
+
+  useEffect(() => {
+    const prevNodes = prevNodesRef.current;
+    const prevPositions = prevPositionsRef.current;
+    if (prevNodes && prevPositions) {
+      const currentIds = new Set(Object.keys(doc.nodes));
+      const removed: NodeId[] = [];
+      for (const id of Object.keys(prevNodes)) {
+        if (!currentIds.has(id)) removed.push(id);
+      }
+
+      if (removed.length > 0) {
+        setExitingNodes((current) => {
+          const next: Record<NodeId, ExitingNode> = { ...current };
+          for (const id of removed) {
+            const node = prevNodes[id];
+            const pos = prevPositions[id];
+            if (!node || !pos) continue;
+            next[id] = { node, pos };
+            window.setTimeout(() => {
+              setExitingNodes((latest) => {
+                if (!latest[id]) return latest;
+                const { [id]: _, ...rest } = latest;
+                return rest;
+              });
+            }, 180);
+          }
+          return next;
+        });
+      }
+    }
+
+    prevNodesRef.current = doc.nodes;
+    prevPositionsRef.current = layout.positions;
+
+    setExitingNodes((current) => {
+      const next: Record<NodeId, ExitingNode> = {};
+      for (const [id, entry] of Object.entries(current)) {
+        if (!doc.nodes[id]) next[id] = entry;
+      }
+      return next;
+    });
+  }, [doc.nodes, layout.positions]);
 
   const nodeEntries = useMemo(() => {
     const entries: { node: Node; pos: NodePosition | undefined }[] = Object.values(doc.nodes).map(
@@ -90,101 +153,133 @@ export function EditorView({ doc, mode, disabled, onSelectNode, onChangeText, on
 
   return (
     <div
-      ref={canvasRef}
-      className="editorCanvas"
-      style={{ width: layout.contentWidth, height: layout.contentHeight }}
+      className="editorCanvasOuter"
+      style={{ width: layout.contentWidth * zoom, height: layout.contentHeight * zoom }}
     >
-      <svg
-        className="editorLines"
-        width={layout.contentWidth}
-        height={layout.contentHeight}
+      <div
+        ref={canvasRef}
+        className="editorCanvas"
+        style={{
+          width: layout.contentWidth,
+          height: layout.contentHeight,
+          transform: `scale(${zoom})`,
+          transformOrigin: "top left",
+        }}
       >
-        {edges.map((edge) => {
-          const from = layout.positions[edge.fromId];
-          const to = layout.positions[edge.toId];
-          if (!from || !to) return null;
-          const fromPoint = {
-            x: from.x + NODE_WIDTH,
-            y: from.y + NODE_HEIGHT / 2,
-          };
-          const toPoint = { x: to.x, y: to.y + NODE_HEIGHT / 2 };
-          const key = `${edge.fromId}-${edge.toId}`;
-          const isHighlighted = highlightedEdgeKeys.has(key);
+        <svg
+          className="editorLines"
+          width={layout.contentWidth}
+          height={layout.contentHeight}
+        >
+          {edges.map((edge) => {
+            const from = layout.positions[edge.fromId];
+            const to = layout.positions[edge.toId];
+            if (!from || !to) return null;
+            const fromPoint = {
+              x: from.x + NODE_WIDTH,
+              y: from.y + NODE_HEIGHT / 2,
+            };
+            const toPoint = { x: to.x, y: to.y + NODE_HEIGHT / 2 };
+            const key = `${edge.fromId}-${edge.toId}`;
+            const isHighlighted = highlightedEdgeKeys.has(key);
+            return (
+              <path
+                key={key}
+                d={svgPathForEdge(fromPoint, toPoint)}
+                className={"edgePath" + (isHighlighted ? " edgePathSelected" : "")}
+              />
+            );
+          })}
+        </svg>
+
+        {nodeEntries.map(({ node, pos }) => {
+          const isCursor = node.id === doc.cursorId;
+          const isMatch = highlightedNodeIds?.has(node.id) ?? false;
+          const isActiveMatch = activeHighlightedNodeId === node.id;
           return (
-            <path
-              key={key}
-              d={svgPathForEdge(fromPoint, toPoint)}
-              className={"edgePath" + (isHighlighted ? " edgePathSelected" : "")}
-            />
+            <div
+              key={node.id}
+              data-node-id={node.id}
+              title={node.text}
+              className={
+                "node" +
+                (isCursor ? " nodeSelected" : "") +
+                (mode === "insert" && isCursor ? " nodeEditing" : "") +
+                (isMatch ? " nodeMatch" : "") +
+                (isActiveMatch ? " nodeMatchActive" : "")
+              }
+              style={{ left: pos.x, top: pos.y, width: NODE_WIDTH, height: NODE_HEIGHT }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                if (disabled || mode === "insert" || panGestureActive) return;
+                onSelectNode(node.id);
+              }}
+            >
+              <div className="nodeText">{node.text || " "}</div>
+            </div>
           );
         })}
-      </svg>
 
-      {nodeEntries.map(({ node, pos }) => {
-        const isCursor = node.id === doc.cursorId;
-        return (
-          <div
-            key={node.id}
-            data-node-id={node.id}
-            title={node.text}
-            className={
-              "node" +
-              (isCursor ? " nodeSelected" : "") +
-              (mode === "insert" && isCursor ? " nodeEditing" : "")
-            }
-            style={{ left: pos.x, top: pos.y, width: NODE_WIDTH, height: NODE_HEIGHT }}
-            onMouseDown={(e) => {
-              e.preventDefault();
-              if (disabled || mode === "insert") return;
-              onSelectNode(node.id);
+        {Object.entries(exitingNodes).map(([id, { node, pos }]) => {
+          const isCursor = id === doc.cursorId;
+          return (
+            <div
+              key={`exit-${id}`}
+              title={node.text}
+              className={
+                "node nodeExiting" +
+                (isCursor ? " nodeSelected" : "") +
+                (mode === "insert" && isCursor ? " nodeEditing" : "")
+              }
+              style={{ left: pos.x, top: pos.y, width: NODE_WIDTH, height: NODE_HEIGHT }}
+            >
+              <div className="nodeText">{node.text || " "}</div>
+            </div>
+          );
+        })}
+
+        {!disabled && mode === "insert" && cursorPos && cursorNode ? (
+          <input
+            ref={inputRef}
+            className="nodeInput"
+            value={cursorNode.text}
+            onChange={(e) => onChangeText(e.currentTarget.value)}
+            onCompositionStart={() => {
+              isComposingRef.current = true;
             }}
-          >
-            <div className="nodeText">{node.text || " "}</div>
-          </div>
-      );
-      })}
-
-      {!disabled && mode === "insert" && cursorPos && cursorNode ? (
-        <input
-          ref={inputRef}
-          className="nodeInput"
-          value={cursorNode.text}
-          onChange={(e) => onChangeText(e.currentTarget.value)}
-          onCompositionStart={() => {
-            isComposingRef.current = true;
-          }}
-          onCompositionEnd={() => {
-            isComposingRef.current = false;
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") {
-              e.preventDefault();
-              e.stopPropagation();
-              onEsc();
-              return;
-            }
-            if (e.key === "Enter") {
-              if (isComposingRef.current || e.nativeEvent.isComposing) {
+            onCompositionEnd={() => {
+              isComposingRef.current = false;
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.preventDefault();
+                e.stopPropagation();
+                onEsc();
                 return;
               }
-              e.preventDefault();
-              e.stopPropagation();
-              onEsc();
-              return;
-            }
-            if (e.key === "Tab") {
-              e.preventDefault();
-              e.stopPropagation();
-            }
-          }}
-          style={{
-            left: cursorPos.x,
-            top: cursorPos.y,
-            width: NODE_WIDTH,
-            height: NODE_HEIGHT,
-          }}
-        />
-      ) : null}
+              if (e.key === "Enter") {
+                if (isComposingRef.current || e.nativeEvent.isComposing) {
+                  return;
+                }
+                e.preventDefault();
+                e.stopPropagation();
+                onEsc();
+                return;
+              }
+              if (e.key === "Tab") {
+                e.preventDefault();
+                e.stopPropagation();
+              }
+            }}
+            style={{
+              left: cursorPos.x,
+              top: cursorPos.y,
+              width: NODE_WIDTH,
+              height: NODE_HEIGHT,
+            }}
+          />
+        ) : null}
+      </div>
     </div>
   );
 }

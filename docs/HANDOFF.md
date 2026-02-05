@@ -1,4 +1,4 @@
-# 引き継ぎメモ（M0→M2完了時点）
+# 引き継ぎメモ（M0→M3途中時点）
 
 このリポジトリ（`vikokoro`）は **Tauri v2 + React + TS** の右方向ツリーエディタです。
 
@@ -35,6 +35,17 @@
   - 保存呼び出しの直列化（古い状態で上書きされない）
   - `workspace.json` は pretty print + 改行で保存
   - JSONが壊れている場合は退避して起動継続
+
+### M3（`docs/milestones/M3.md` / 途中）
+- UI/UX polish
+  - Theme切替（Dark/Light/Tokyo Night、localStorage保存）
+  - Help（`?` で表示、`Esc`で閉じる）
+  - タブ/モーダル/ノードのアニメ（出現/追加/削除）
+  - Zoom（`Ctrl + wheel`、マウス位置中心）
+  - Pan（`Space + drag`）
+  - Save status indicator（Saved/Saving/Local）
+  - Search（`Ctrl+F`、部分一致、Path表示、ハイライト、Enterで次）
+  - Command palette（`Ctrl+P`）
 
 ## 追加で入れた改善（仕様外だが便利）
 - Insert中 `Enter` で編集確定→Normal（IME composing中は確定しない）
@@ -76,6 +87,7 @@
 - 状態/操作: `src/editor/state.ts`
 - 型: `src/editor/types.ts`
 - レイアウト: `src/editor/layout.ts`
+- スタイル: `src/App.css`
 - 永続化（Rust）: `src-tauri/src/lib.rs`
 
 ## 既知の仕様/制限
@@ -91,6 +103,15 @@
 
 ## 次回の最初にやること（チェックリスト）
 - `npm run tauri dev` で起動
+- Theme / Help の確認
+  - 右上 Theme ボタンで切替
+  - `?` で Help を開いて `Esc` で閉じる
+- Zoom / Pan の確認
+  - `Ctrl + wheel` でズーム
+  - `Space + drag` でパン
+- Search / Palette の確認
+  - `Ctrl+F` で検索 → `Enter`/`Shift+Enter`
+  - `Ctrl+P` でパレット → `Enter`で実行
 - `Ctrl+T` で2枚以上にする
 - 適当に編集/移動してからアプリ終了→再起動
   - タブ構成が復元される
@@ -117,11 +138,12 @@
 - 案3（仕様に厳密）: M1に書いてあるトリガー以外では保存しない
   - 注意: この場合、移動だけして終了→再起動したときに選択位置が復元されなくなる可能性がある
 
-## 次マイルストーン（M2）のための質問メモ
+## 次の検討メモ（M3以降）
 
 次を決めると仕様に落とし込みやすいです（ここは推測せず要件化が必要）。
 
 - ノード削除（`dd`）は正式仕様（M2で明文化）
 - タブを閉じたときの「閉じたタブ復元」は不要
 - テキスト編集を複数行にするか（M0はinput overlay前提で単一行）
-- レイアウト改善の範囲（自動整列の精度、折り返し、ズーム、ミニマップ等）
+- レイアウト改善の範囲（自動整列の精度、折り返し等）
+- ショートカットを mac で `Cmd` 対応するか
