@@ -358,22 +358,22 @@ function App() {
         return;
       }
 
-      if (event.key === "h") {
+      if (event.key === "h" || event.key === "ArrowLeft") {
         event.preventDefault();
         dispatch({ type: "moveCursor", direction: "parent" });
         return;
       }
-      if (event.key === "l") {
+      if (event.key === "l" || event.key === "ArrowRight") {
         event.preventDefault();
         dispatch({ type: "moveCursor", direction: "child" });
         return;
       }
-      if (event.key === "j") {
+      if (event.key === "j" || event.key === "ArrowDown") {
         event.preventDefault();
         dispatch({ type: "moveCursor", direction: "nextSibling" });
         return;
       }
-      if (event.key === "k") {
+      if (event.key === "k" || event.key === "ArrowUp") {
         event.preventDefault();
         dispatch({ type: "moveCursor", direction: "prevSibling" });
         return;
